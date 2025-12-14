@@ -7,11 +7,16 @@ const CHAT_TARGETS = {
         'textarea[data-id="prompt-textarea"]',
         'textarea#prompt-textarea',
         'textarea[aria-label="Message ChatGPT"]',
+        'div[contenteditable="true"][data-id="prompt-textarea"]',
+        'div[contenteditable="true"][role="textbox"]',
+        'div[contenteditable="true"]',
         'textarea',
       ],
       sendButton: [
         'button[data-testid="send-button"]',
         'button[aria-label="Send message"]',
+        'button[aria-label="Send"]',
+        'button[type="submit"]',
       ],
       modelButton: [
         'button[data-testid="model-switcher-button"]',
@@ -26,6 +31,9 @@ const CHAT_TARGETS = {
       textarea: [
         'textarea[aria-label="Enter a prompt here"]',
         'textarea[aria-label^="Enter a prompt"]',
+        'div[contenteditable="true"][aria-label="Enter a prompt here"]',
+        'div[contenteditable="true"][aria-label^="Enter a prompt"]',
+        'div[contenteditable="true"][aria-label]',
         'textarea[aria-label]'
       ],
       sendButton: [
@@ -74,7 +82,13 @@ async function setTextareaValue(tabId, selector, value) {
         const el = document.querySelector(innerSelector);
         if (!el) return false;
         el.focus();
-        el.value = text;
+        if ('value' in el) {
+          el.value = text;
+        } else if (el.getAttribute('contenteditable') === 'true') {
+          el.textContent = text;
+        } else {
+          return false;
+        }
         el.dispatchEvent(new Event('input', { bubbles: true }));
         el.dispatchEvent(new Event('change', { bubbles: true }));
         return true;
