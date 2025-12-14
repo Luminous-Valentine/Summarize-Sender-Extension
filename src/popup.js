@@ -2,11 +2,9 @@ import { buildMessage, formatTemplate, getSettings } from './storage.js';
 
 let settings;
 let pageData = { url: '', title: '', content: '', selection: '' };
-let pageStatusEl;
 
 async function init() {
   settings = await getSettings();
-  pageStatusEl = document.getElementById('pageStatus');
   await pullPageData();
   populateTemplates();
   hydrateForm();
@@ -18,19 +16,13 @@ async function init() {
 async function pullPageData() {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   if (!tab) return;
-  pageData.url = tab.url || '';
-  pageData.title = tab.title || '';
   try {
     const response = await chrome.tabs.sendMessage(tab.id, { type: 'extractPage' });
     if (response?.ok) {
       pageData = response.payload;
-      pageStatusEl.textContent = '';
-      pageStatusEl.classList.remove('warning');
     }
   } catch (error) {
     console.warn('Unable to read page data', error);
-    pageStatusEl.textContent = 'ページの本文を取得できませんでした（URLのみ送信されます）';
-    pageStatusEl.classList.add('warning');
   }
 }
 

@@ -22,20 +22,6 @@ async function openTargetTab(targetKey) {
   return tab.id;
 }
 
-async function ensureHostPermission(rawUrl) {
-  try {
-    const url = new URL(rawUrl);
-    const pattern = `${url.origin}/*`;
-    const perm = { origins: [pattern] };
-    const hasPerm = await new Promise((resolve) => chrome.permissions.contains(perm, (granted) => resolve(Boolean(granted))));
-    if (hasPerm) return true;
-    return new Promise((resolve) => chrome.permissions.request(perm, (granted) => resolve(Boolean(granted))));
-  } catch (error) {
-    console.warn('Failed to parse host permission', error);
-    return false;
-  }
-}
-
 function waitForTabReady(tabId) {
   return new Promise((resolve) => {
     const check = () => {
@@ -64,12 +50,6 @@ async function executeSend(payload) {
   const targetConfig = CHAT_TARGETS[target];
   if (!targetConfig) {
     throw new Error('Unknown target');
-  }
-
-  const hasPermission = await ensureHostPermission(targetConfig.newChatUrl);
-  if (!hasPermission) {
-    emitNotification('Permission required', 'Please allow access to the chat site and try again.');
-    return { status: 'permission-denied' };
   }
 
   const composed = buildMessage({ mode, prompt, page });
