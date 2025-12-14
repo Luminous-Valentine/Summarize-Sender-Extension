@@ -1,0 +1,45 @@
+body {
+  font-family: Arial, sans-serif;
+  padding: 16px;
+  background: #f6f7fb;
+  color: #222;
+}
+
+h1 { margin-top: 0; }
+
+section {
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 12px;
+  margin-bottom: 12px;
+}
+
+.row { display: flex; gap: 8px; }
+
+label { display: block; margin: 8px 0; }
+
+input, textarea, select {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+#templateList button {
+  margin-right: 6px;
+  margin-bottom: 6px;
+}
+
+button {
+  padding: 8px 12px;
+  border: none;
+  border-radius: 4px;
+  background: #0b57d0;
+  color: #fff;
+  cursor: pointer;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
