@@ -6,7 +6,6 @@
   "permissions": ["activeTab", "scripting", "storage", "tabs", "notifications"],
   "host_permissions": [
     "https://chat.openai.com/*",
-    "https://chatgpt.com/*",
     "https://gemini.google.com/*",
     "https://gemini.google.com/app/*"
   ],

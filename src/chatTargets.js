@@ -1,107 +1,65 @@
 const CHAT_TARGETS = {
   chatgpt: {
     name: 'ChatGPT',
-    newChatUrl: 'https://chatgpt.com/?new_chat=true',
+    newChatUrl: 'https://chat.openai.com/?new_chat=true',
     selectors: {
-      textarea: [
-        'textarea[data-id="prompt-textarea"]',
-        'textarea#prompt-textarea',
-        'textarea[aria-label="Message ChatGPT"]',
-        'div[contenteditable="true"][data-id="prompt-textarea"]',
-        'div[contenteditable="true"][role="textbox"]',
-        'div[contenteditable="true"]',
-        'textarea',
-      ],
-      sendButton: [
-        'button[data-testid="send-button"]',
-        'button[aria-label="Send message"]',
-        'button[aria-label="Send"]',
-        'button[type="submit"]',
-      ],
-      modelButton: [
-        'button[data-testid="model-switcher-button"]',
-        'button[aria-haspopup="listbox"][data-testid]'
-      ],
+      textarea: 'textarea',
+      sendButton: 'button[data-testid="send-button"]',
+      modelButton: 'button[data-testid="model-switcher-button"]',
     },
   },
   gemini: {
     name: 'Gemini',
     newChatUrl: 'https://gemini.google.com/app',
     selectors: {
-      textarea: [
-        'textarea[aria-label="Enter a prompt here"]',
-        'textarea[aria-label^="Enter a prompt"]',
-        'div[contenteditable="true"][aria-label="Enter a prompt here"]',
-        'div[contenteditable="true"][aria-label^="Enter a prompt"]',
-        'div[contenteditable="true"][aria-label]',
-        'textarea[aria-label]'
-      ],
-      sendButton: [
-        'button[aria-label="Send message"]',
-        'button[data-testid="send-button"]',
-        'button[type="submit"]',
-        'button[aria-label="Send"]'
-      ],
-      modelButton: [],
+      textarea: 'textarea[aria-label], textarea',
+      sendButton: 'button[type="submit"], button[aria-label="Send"]',
+      modelButton: '',
     },
   },
 };
 
 function emitNotification(title, message) {
   if (chrome.notifications) {
-    chrome.notifications.create({ type: 'basic', iconUrl: 'icons/icon128.svg', title, message });
+    chrome.notifications.create({ type: 'basic', iconUrl: 'icons/icon128.png', title, message });
   } else {
     console.warn(title, message);
   }
 }
 
 async function clickElement(tabId, selector) {
-  const selectors = Array.isArray(selector) ? selector : [selector];
-  for (const sel of selectors) {
-    const [result] = await chrome.scripting.executeScript({
-      target: { tabId },
-      func: (innerSelector) => {
-        const el = document.querySelector(innerSelector);
-        if (!el) return false;
-        el.click();
-        return true;
-      },
-      args: [sel],
-    });
-    if (result?.result) return true;
-  }
-  return false;
+  const [result] = await chrome.scripting.executeScript({
+    target: { tabId },
+    func: (sel) => {
+      const el = document.querySelector(sel);
+      if (!el) return false;
+      el.click();
+      return true;
+    },
+    args: [selector],
+  });
+  return result?.result;
 }
 
 async function setTextareaValue(tabId, selector, value) {
-  const selectors = Array.isArray(selector) ? selector : [selector];
-  for (const sel of selectors) {
-    const [result] = await chrome.scripting.executeScript({
-      target: { tabId },
-      func: (innerSelector, text) => {
-        const el = document.querySelector(innerSelector);
-        if (!el) return false;
-        el.focus();
-        if ('value' in el) {
-          el.value = text;
-        } else if (el.getAttribute('contenteditable') === 'true') {
-          el.textContent = text;
-        } else {
-          return false;
-        }
-        el.dispatchEvent(new Event('input', { bubbles: true }));
-        el.dispatchEvent(new Event('change', { bubbles: true }));
-        return true;
-      },
-      args: [sel, value],
-    });
-    if (result?.result) return true;
-  }
-  return false;
+  const [result] = await chrome.scripting.executeScript({
+    target: { tabId },
+    func: (sel, text) => {
+      const el = document.querySelector(sel);
+      if (!el) return false;
+      el.focus();
+      el.value = text;
+      el.dispatchEvent(new Event('input', { bubbles: true }));
+      el.dispatchEvent(new Event('change', { bubbles: true }));
+      return true;
+    },
+    args: [selector, value],
+  });
+  return result?.result;
 }
 
 async function selectChatGPTModel(tabId, selectors, modelName) {
-  if (!selectors.modelButton || selectors.modelButton.length === 0) return { ok: true };
+  if (!selectors.modelButton) return { ok: true };
   const opened = await clickElement(tabId, selectors.modelButton);
   if (!opened) {
     return { ok: false, reason: 'Model picker not found' };

@@ -15,4 +15,4 @@ A Chrome extension that opens a new ChatGPT or Gemini chat, auto-fills the promp
 2. Use the toolbar action to open the popup, choose destination, mode, template, model, and auto-send.
 3. Manage templates, limits, and model availability from the Options page.
 
-Permissions are limited to `activeTab`, `scripting`, `storage`, and `tabs`, with host access only for ChatGPT (chatgpt.com and the legacy chat.openai.com) and Gemini domains.
+Permissions are limited to `activeTab`, `scripting`, `storage`, and `tabs`, with host access only for ChatGPT and Gemini domains.
