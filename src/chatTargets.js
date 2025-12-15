@@ -76,6 +76,35 @@ const CHAT_TARGETS = {
   },
 };
 
+function findInDocumentAndShadows(selectors, root = document) {
+  const selectorList = Array.isArray(selectors) ? selectors : [selectors];
+
+  const findWithSelector = (selector, searchRoot) => {
+    const rootWithQuery = searchRoot && typeof searchRoot.querySelector === 'function';
+    if (rootWithQuery) {
+      const directMatch = searchRoot.querySelector(selector);
+      if (directMatch) return directMatch;
+    }
+
+    const allElements = rootWithQuery ? searchRoot.querySelectorAll('*') : [];
+    for (const el of allElements) {
+      if (el.shadowRoot) {
+        const shadowMatch = findWithSelector(selector, el.shadowRoot);
+        if (shadowMatch) return shadowMatch;
+      }
+    }
+
+    return null;
+  };
+
+  for (const selector of selectorList) {
+    const found = findWithSelector(selector, root);
+    if (found) return found;
+  }
+
+  return null;
+}
+
 async function emitNotification(title, message) {
   const iconUrl = await resolveIcon(128);
   if (chrome.notifications) {
@@ -87,13 +116,17 @@ async function emitNotification(title, message) {
 
 async function waitForElement(tabId, selector, attempts = 20, delayMs = 500) {
   const selectors = Array.isArray(selector) ? selector : [selector];
+  const findFnSource = findInDocumentAndShadows.toString();
   for (let attempt = 0; attempt < attempts; attempt += 1) {
     for (const sel of selectors) {
       try {
         const [result] = await chrome.scripting.executeScript({
           target: { tabId },
-          func: (innerSelector) => Boolean(document.querySelector(innerSelector)),
-          args: [sel],
+          func: (innerSelectors) => {
+            const finder = (0, eval)(`(${innerSelectors.findFnSource})`);
+            return Boolean(finder(innerSelectors.selectorList));
+          },
+          args: [{ selectorList: sel, findFnSource }],
         });
         if (result?.result) return true;
       } catch (error) {
@@ -102,23 +135,30 @@ async function waitForElement(tabId, selector, attempts = 20, delayMs = 500) {
     }
     await new Promise((resolve) => setTimeout(resolve, delayMs));
   }
+  const detail = `waitForElement: selectors ${selectors.join(', ')} not found after ${attempts} attempts.`;
+  console.warn(detail);
+  await emitNotification('Element not found', detail);
   return false;
 }
 
 async function clickElement(tabId, selector, attempts = 10, delayMs = 500) {
   const selectors = Array.isArray(selector) ? selector : [selector];
+  const findFnSource = findInDocumentAndShadows.toString();
   for (let attempt = 0; attempt < attempts; attempt += 1) {
     for (const sel of selectors) {
       try {
         const [result] = await chrome.scripting.executeScript({
           target: { tabId },
-          func: (innerSelector) => {
-            const el = document.querySelector(innerSelector);
+          func: (innerSelectors) => {
+            const finder = (0, eval)(`(${innerSelectors.findFnSource})`);
+            const el = finder(innerSelectors.selectorList);
             if (!el || el.disabled) return false;
+            el.focus?.();
             el.click();
+            el.dispatchEvent(new Event('input', { bubbles: true }));
             return true;
           },
-          args: [sel],
+          args: [{ selectorList: sel, findFnSource }],
         });
         if (result?.result) return true;
       } catch (error) {
@@ -127,21 +167,30 @@ async function clickElement(tabId, selector, attempts = 10, delayMs = 500) {
     }
     await new Promise((resolve) => setTimeout(resolve, delayMs));
   }
+  const detail = `clickElement: selectors ${selectors.join(', ')} not found or not clickable after ${attempts} attempts.`;
+  console.warn(detail);
+  await emitNotification('Click failed', detail);
   return false;
 }
 
 async function setTextareaValue(tabId, selector, value, attempts = 20, delayMs = 500) {
   const selectors = Array.isArray(selector) ? selector : [selector];
+  const findFnSource = findInDocumentAndShadows.toString();
   for (let attempt = 0; attempt < attempts; attempt += 1) {
     for (const sel of selectors) {
       try {
         const [result] = await chrome.scripting.executeScript({
           target: { tabId },
-          func: (innerSelector, text) => {
-            const el = document.querySelector(innerSelector);
+          func: (innerSelectors, text) => {
+            const finder = (0, eval)(`(${innerSelectors.findFnSource})`);
+            const el = finder(innerSelectors.selectorList);
             if (!el) return false;
-            if (el.isContentEditable) {
+
+            if (typeof el.focus === 'function') {
               el.focus();
+            }
+
+            if (el.isContentEditable) {
               el.textContent = text;
               const inputEvent = new InputEvent('input', { bubbles: true, data: text });
               el.dispatchEvent(inputEvent);
@@ -152,13 +201,18 @@ async function setTextareaValue(tabId, selector, value, attempts = 20, delayMs =
               } else {
                 el.value = text;
               }
+              const inputEvent = new InputEvent('input', { bubbles: true, data: text });
+              el.dispatchEvent(inputEvent);
             }
+
             el.dispatchEvent(new Event('input', { bubbles: true }));
             el.dispatchEvent(new Event('change', { bubbles: true }));
-            el.focus();
+            if (typeof el.focus === 'function') {
+              el.focus();
+            }
             return true;
           },
-          args: [sel, value],
+          args: [{ selectorList: sel, findFnSource }, value],
         });
         if (result?.result) return true;
       } catch (error) {
@@ -167,6 +221,9 @@ async function setTextareaValue(tabId, selector, value, attempts = 20, delayMs =
     }
     await new Promise((resolve) => setTimeout(resolve, delayMs));
   }
+  const detail = `setTextareaValue: selectors ${selectors.join(', ')} not found after ${attempts} attempts.`;
+  console.warn(detail);
+  await emitNotification('Textarea not found', detail);
   return false;
 }
 
@@ -203,4 +260,4 @@ async function selectChatGPTModel(tabId, selectors, modelName) {
   }
 }
 
-export { CHAT_TARGETS, emitNotification, setTextareaValue, clickElement, selectChatGPTModel, waitForElement };
+export { CHAT_TARGETS, emitNotification, setTextareaValue, clickElement, selectChatGPTModel, waitForElement, findInDocumentAndShadows };
