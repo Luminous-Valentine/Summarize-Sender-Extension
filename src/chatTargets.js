@@ -59,6 +59,9 @@ const CHAT_TARGETS = {
     newChatUrl: 'https://gemini.google.com/app',
     selectors: {
       textarea: [
+        'textarea[data-qa="input-textarea"]',
+        'textarea[aria-label="Message Gemini"]',
+        'textarea[aria-label="Message Gemini AI"]',
         'textarea[aria-label="Enter a prompt here"]',
         'textarea[aria-label^="Enter a prompt"]',
         'textarea[aria-label]',
@@ -66,6 +69,8 @@ const CHAT_TARGETS = {
         'div[role="textbox"]'
       ],
       sendButton: [
+        'button[data-qa="send-button"]',
+        'button[data-qa="input-send-button"]',
         'button[aria-label="Send message"]',
         'button[data-testid="send-button"]',
         'button[type="submit"]',
