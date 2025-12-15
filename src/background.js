@@ -19,6 +19,8 @@ async function openTargetTab(targetKey) {
   const target = CHAT_TARGETS[targetKey];
   const tab = await chrome.tabs.create({ url: target.newChatUrl, active: true });
   await waitForTabReady(tab.id);
+  // Allow the app shell to render before trying to inject into the page.
+  await new Promise((resolve) => setTimeout(resolve, 1200));
   return tab.id;
 }
 
@@ -51,7 +53,7 @@ function waitForTabReady(tabId) {
 
 async function tryAutoSend(tabId, selectors, retries, delay) {
   for (let i = 0; i < retries; i += 1) {
-    const clicked = await clickElement(tabId, selectors.sendButton);
+    const clicked = await clickElement(tabId, selectors.sendButton, 10, delay);
     if (clicked) return true;
     await new Promise((resolve) => setTimeout(resolve, delay));
   }

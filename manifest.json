@@ -5,6 +5,7 @@
   "description": "Send the current page to ChatGPT or Gemini with templates and optional auto-send.",
   "permissions": ["activeTab", "scripting", "storage", "tabs", "notifications"],
   "host_permissions": [
+    "<all_urls>",
     "https://chat.openai.com/*",
     "https://chatgpt.com/*",
     "https://gemini.google.com/*",

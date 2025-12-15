@@ -36,12 +36,20 @@ async function pullPageData() {
   if (!tab) return;
   pageData.url = tab.url || '';
   pageData.title = tab.title || '';
+  if (!/^https?:\/\//.test(pageData.url)) {
+    pageStatusEl.textContent = 'このページでは本文抽出が許可されていません（URLのみ送信されます）';
+    pageStatusEl.classList.add('warning');
+    return;
+  }
   try {
     const response = await chrome.tabs.sendMessage(tab.id, { type: 'extractPage' });
     if (response?.ok) {
       pageData = response.payload;
       pageStatusEl.textContent = '';
       pageStatusEl.classList.remove('warning');
+    } else {
+      pageStatusEl.textContent = 'ページの本文を取得できませんでした（URLのみ送信されます）';
+      pageStatusEl.classList.add('warning');
     }
   } catch (error) {
     console.warn('Unable to read page data', error);
