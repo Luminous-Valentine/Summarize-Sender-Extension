@@ -1,0 +1,52 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Summarize Sender</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <header>
+    <h1>Summarize Sender</h1>
+  </header>
+  <div id="pageStatus" class="status" aria-live="polite"></div>
+  <section class="controls">
+    <label>Send to
+      <select id="target">
+        <option value="chatgpt">ChatGPT</option>
+        <option value="gemini">Gemini</option>
+      </select>
+    </label>
+    <label>Mode
+      <select id="mode">
+        <option value="url">URL方式</option>
+        <option value="content">本文方式</option>
+      </select>
+    </label>
+    <label>Template
+      <select id="template"></select>
+    </label>
+    <label>Prompt
+      <textarea id="prompt" rows="4"></textarea>
+    </label>
+    <label id="model-wrapper">ChatGPT model
+      <select id="model"></select>
+    </label>
+    <label class="inline">
+      <input type="checkbox" id="autoSend"> 自動送信を試行
+    </label>
+  </section>
+  <section class="preview">
+    <div class="preview-header">
+      <span>送信内容プレビュー</span>
+      <span id="charCount">0 chars</span>
+    </div>
+    <pre id="preview"></pre>
+  </section>
+  <footer>
+    <button id="openOptions">Options</button>
+    <button id="execute">送信（入力）</button>
+  </footer>
+  <script type="module" src="popup.js"></script>
+</body>
+</html>
