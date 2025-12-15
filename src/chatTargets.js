@@ -81,14 +81,17 @@ const CHAT_TARGETS = {
   },
 };
 
-function findInDocumentAndShadows(selectors, root = document) {
+function findInDocumentAndShadows(selectors, root = document, predicate) {
   const selectorList = Array.isArray(selectors) ? selectors : [selectors];
+  const matchesPredicate = (el) => (typeof predicate === 'function' ? predicate(el) : true);
 
   const findWithSelector = (selector, searchRoot) => {
-    const rootWithQuery = searchRoot && typeof searchRoot.querySelector === 'function';
+    const rootWithQuery = searchRoot && typeof searchRoot.querySelectorAll === 'function';
     if (rootWithQuery) {
-      const directMatch = searchRoot.querySelector(selector);
-      if (directMatch) return directMatch;
+      const directMatches = searchRoot.querySelectorAll(selector);
+      for (const match of directMatches) {
+        if (matchesPredicate(match)) return match;
+      }
     }
 
     const allElements = rootWithQuery ? searchRoot.querySelectorAll('*') : [];
@@ -236,28 +239,40 @@ async function selectChatGPTModel(tabId, selectors, modelName) {
   if (!selectors.modelButton || selectors.modelButton.length === 0) return { ok: true };
   const opened = await clickElement(tabId, selectors.modelButton, 8, 600);
   if (!opened) {
+    const detail = 'Model button not found (including within shadow DOM).';
+    console.warn(detail);
+    await emitNotification('Model picker missing', detail);
     return { ok: false, reason: 'Model picker not found' };
   }
   try {
     const needle = modelName.trim().toLowerCase();
+    const findFnSource = findInDocumentAndShadows.toString();
     for (let i = 0; i < 8; i += 1) {
       const [result] = await chrome.scripting.executeScript({
         target: { tabId },
-        func: (name) => {
-          const buttons = Array.from(document.querySelectorAll('button, div'));
-          const target = buttons.find((b) => {
-            const label = (b.innerText || '').trim().toLowerCase();
-            return label === name || label.includes(name);
-          });
+        func: (name, finderSource) => {
+          const finder = (0, eval)(`(${finderSource})`);
+          const target = finder(
+            ['button', 'div'],
+            document,
+            (el) => {
+              const label = (el.innerText || '').trim().toLowerCase();
+              return label === name || label.includes(name);
+            },
+          );
           if (!target) return false;
+          if (target.disabled) return false;
           target.click();
           return true;
         },
-        args: [needle],
+        args: [needle, findFnSource],
       });
       if (result?.result) return { ok: true };
       await new Promise((resolve) => setTimeout(resolve, 500));
     }
+    const detail = 'Model option not found within shadow DOM or visible DOM.';
+    console.warn(detail);
+    await emitNotification('Model option missing', detail);
     return { ok: false, reason: 'Model not available' };
   } catch (error) {
     console.warn('selectChatGPTModel failed', error);
