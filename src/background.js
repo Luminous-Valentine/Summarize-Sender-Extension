@@ -1,4 +1,4 @@
-import { CHAT_TARGETS, emitNotification, setTextareaValue, clickElement, selectChatGPTModel } from './chatTargets.js';
+import { CHAT_TARGETS, emitNotification, setTextareaValue, clickElement, selectChatGPTModel, waitForElement } from './chatTargets.js';
 import { buildMessage, enforceSizeLimit, getSettings } from './storage.js';
 
 chrome.runtime.onInstalled.addListener(async () => {
@@ -83,6 +83,12 @@ async function executeSend(payload) {
 
   const tabId = await openTargetTab(target);
   const selectors = targetConfig.selectors;
+
+  const ready = await waitForElement(tabId, selectors.textarea, 24, 600);
+  if (!ready) {
+    emitNotification('Input not ready', 'Chat interface did not load in time.');
+    return { status: 'input-missing' };
+  }
 
   if (target === 'chatgpt' && model) {
     const modelResult = await selectChatGPTModel(tabId, selectors, model);

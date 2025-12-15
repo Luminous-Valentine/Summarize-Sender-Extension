@@ -33,6 +33,8 @@ const CHAT_TARGETS = {
     newChatUrl: 'https://chatgpt.com/?new_chat=true',
     selectors: {
       textarea: [
+        'div[contenteditable="true"][data-id="prompt-textarea"]',
+        'div[contenteditable="true"][data-testid="prompt-textarea"]',
         'textarea[data-id="prompt-textarea"]',
         'textarea#prompt-textarea',
         'textarea[aria-label="Message ChatGPT"]',
@@ -81,6 +83,26 @@ async function emitNotification(title, message) {
   } else {
     console.warn(title, message);
   }
+}
+
+async function waitForElement(tabId, selector, attempts = 20, delayMs = 500) {
+  const selectors = Array.isArray(selector) ? selector : [selector];
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    for (const sel of selectors) {
+      try {
+        const [result] = await chrome.scripting.executeScript({
+          target: { tabId },
+          func: (innerSelector) => Boolean(document.querySelector(innerSelector)),
+          args: [sel],
+        });
+        if (result?.result) return true;
+      } catch (error) {
+        console.warn('waitForElement failed', error);
+      }
+    }
+    await new Promise((resolve) => setTimeout(resolve, delayMs));
+  }
+  return false;
 }
 
 async function clickElement(tabId, selector, attempts = 10, delayMs = 500) {
@@ -155,17 +177,21 @@ async function selectChatGPTModel(tabId, selectors, modelName) {
     return { ok: false, reason: 'Model picker not found' };
   }
   try {
+    const needle = modelName.trim().toLowerCase();
     for (let i = 0; i < 8; i += 1) {
       const [result] = await chrome.scripting.executeScript({
         target: { tabId },
         func: (name) => {
           const buttons = Array.from(document.querySelectorAll('button, div'));
-          const target = buttons.find((b) => (b.innerText || '').trim() === name);
+          const target = buttons.find((b) => {
+            const label = (b.innerText || '').trim().toLowerCase();
+            return label === name || label.includes(name);
+          });
           if (!target) return false;
           target.click();
           return true;
         },
-        args: [modelName],
+        args: [needle],
       });
       if (result?.result) return { ok: true };
       await new Promise((resolve) => setTimeout(resolve, 500));
@@ -177,4 +203,4 @@ async function selectChatGPTModel(tabId, selectors, modelName) {
   }
 }
 
-export { CHAT_TARGETS, emitNotification, setTextareaValue, clickElement, selectChatGPTModel };
+export { CHAT_TARGETS, emitNotification, setTextareaValue, clickElement, selectChatGPTModel, waitForElement };

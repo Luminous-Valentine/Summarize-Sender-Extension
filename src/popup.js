@@ -10,6 +10,7 @@ async function init() {
   pageStatusEl = document.getElementById('pageStatus');
   await pullPageData();
   populateTemplates();
+  populateModels();
   hydrateForm();
   applyTemplate();
   renderPreview();
@@ -69,11 +70,27 @@ function populateTemplates() {
   });
 }
 
+function populateModels() {
+  const select = document.getElementById('model');
+  select.innerHTML = '';
+  const models = Array.from(new Set([...(settings.allowedModels || []), settings.model].filter(Boolean)));
+  models.forEach((model) => {
+    const option = document.createElement('option');
+    option.value = model;
+    option.textContent = model;
+    select.appendChild(option);
+  });
+}
+
 function hydrateForm() {
   document.getElementById('target').value = settings.target;
   document.getElementById('mode').value = settings.sendMode;
   document.getElementById('autoSend').checked = settings.autoSend;
-  document.getElementById('model').value = settings.model;
+  const modelSelect = document.getElementById('model');
+  modelSelect.value = settings.model;
+  if (!modelSelect.value && modelSelect.options.length > 0) {
+    modelSelect.value = modelSelect.options[0].value;
+  }
   toggleModelVisibility();
 }
 

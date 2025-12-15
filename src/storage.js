@@ -10,7 +10,14 @@ const DEFAULT_SETTINGS = {
   extractionMode: 'readability-first',
   domainExceptions: [],
   modelAvailabilityMode: 'auto',
-  allowedModels: ['gpt-4o', 'gpt-4o-mini'],
+  allowedModels: [
+    'gpt-4o',
+    'gpt-4o-mini',
+    'o1',
+    'o1-mini',
+    'o3-mini',
+    'o3-mini-high',
+  ],
   templates: [
     {
       id: 'default',
