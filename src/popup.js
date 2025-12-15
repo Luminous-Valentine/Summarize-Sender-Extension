@@ -1,10 +1,13 @@
+import { CHAT_TARGETS } from './chatTargets.js';
 import { buildMessage, formatTemplate, getSettings } from './storage.js';
 
 let settings;
 let pageData = { url: '', title: '', content: '', selection: '' };
+let pageStatusEl;
 
 async function init() {
   settings = await getSettings();
+  pageStatusEl = document.getElementById('pageStatus');
   await pullPageData();
   populateTemplates();
   hydrateForm();
@@ -13,16 +16,37 @@ async function init() {
   bindEvents();
 }
 
+async function ensurePermissionForUrl(rawUrl) {
+  if (!rawUrl) return false;
+  try {
+    const url = new URL(rawUrl);
+    const originPattern = `${url.origin}/*`;
+    const perm = { origins: [originPattern] };
+    const hasPermission = await new Promise((resolve) => chrome.permissions.contains(perm, (granted) => resolve(Boolean(granted))));
+    if (hasPermission) return true;
+    return new Promise((resolve) => chrome.permissions.request(perm, (granted) => resolve(Boolean(granted))));
+  } catch (error) {
+    console.warn('Permission request failed', error);
+    return false;
+  }
+}
+
 async function pullPageData() {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   if (!tab) return;
+  pageData.url = tab.url || '';
+  pageData.title = tab.title || '';
   try {
     const response = await chrome.tabs.sendMessage(tab.id, { type: 'extractPage' });
     if (response?.ok) {
       pageData = response.payload;
+      pageStatusEl.textContent = '';
+      pageStatusEl.classList.remove('warning');
     }
   } catch (error) {
     console.warn('Unable to read page data', error);
+    pageStatusEl.textContent = 'ページの本文を取得できませんでした（URLのみ送信されます）';
+    pageStatusEl.classList.add('warning');
   }
 }
 
@@ -83,6 +107,16 @@ function bindEvents() {
 }
 
 async function executeSend() {
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  if (tab?.url) {
+    const granted = await ensurePermissionForUrl(tab.url);
+    if (!granted) {
+      alert('このページへのアクセス権がありません。権限を許可してから再試行してください。');
+      return;
+    }
+    await pullPageData();
+  }
+
   const payload = {
     target: document.getElementById('target').value,
     model: document.getElementById('model').value,
@@ -91,15 +125,27 @@ async function executeSend() {
     prompt: document.getElementById('prompt').value,
     page: pageData,
   };
+  const targetConfig = CHAT_TARGETS[payload.target];
+  if (targetConfig?.newChatUrl) {
+    const granted = await ensurePermissionForUrl(targetConfig.newChatUrl);
+    if (!granted) {
+      alert('送信先サイトへのアクセス権がありません。権限を許可してから再試行してください。');
+      return;
+    }
+  }
   chrome.storage.local.set({
     target: payload.target,
     model: payload.model,
     sendMode: payload.mode,
     autoSend: payload.autoSend,
   });
-  const response = await chrome.runtime.sendMessage({ type: 'executeSend', payload });
-  if (!response?.ok) {
-    alert(`送信に失敗しました: ${response?.error || 'Unknown error'}`);
+  try {
+    const response = await chrome.runtime.sendMessage({ type: 'executeSend', payload });
+    if (!response?.ok) {
+      alert(`送信に失敗しました: ${response?.error || 'Unknown error'}`);
+    }
+  } catch (error) {
+    alert(`送信に失敗しました: ${error?.message || error}`);
   }
 }
 
