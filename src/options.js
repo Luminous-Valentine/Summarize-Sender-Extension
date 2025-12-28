@@ -32,9 +32,15 @@ function fillSettings() {
   document.getElementById('retryCount').value = settings.retryCount;
   document.getElementById('retryIntervalMs').value = settings.retryIntervalMs;
   document.getElementById('modelAvailabilityMode').value = settings.modelAvailabilityMode;
-  document.getElementById('allowedModels').value = settings.allowedModels.join(',');
+  document.getElementById('allowedModels').value = settings.allowedModelsManual.join(',');
+  document.getElementById('allowedModelsAuto').value = settings.allowedModelsAuto.join(',');
   document.getElementById('extractionMode').value = settings.extractionMode;
-  document.getElementById('domainExceptions').value = settings.domainExceptions.join(',');
+  document.getElementById('domainExceptionsReadability').value = settings.domainExceptionsReadability.join(',');
+  document.getElementById('domainExceptionsRaw').value = settings.domainExceptionsRaw.join(',');
+  document.getElementById('geminiAccountIndex').value = settings.geminiAccountIndex ?? 0;
+  document.getElementById('modelDetectionBeta').checked = Boolean(settings.modelDetectionBetaEnabled);
+  toggleModelTextareas();
+  toggleDomainTextareas();
 }
 
 function bindEvents() {
@@ -57,6 +63,8 @@ function bindEvents() {
     flashStatus('Template deleted');
   });
   document.getElementById('save').addEventListener('click', saveAll);
+  document.getElementById('modelAvailabilityMode').addEventListener('change', toggleModelTextareas);
+  document.getElementById('extractionMode').addEventListener('change', toggleDomainTextareas);
 }
 
 async function saveAll() {
@@ -66,12 +74,34 @@ async function saveAll() {
     retryCount: Number(document.getElementById('retryCount').value) || 1,
     retryIntervalMs: Number(document.getElementById('retryIntervalMs').value) || 500,
     modelAvailabilityMode: document.getElementById('modelAvailabilityMode').value,
-    allowedModels: document.getElementById('allowedModels').value.split(',').map((m) => m.trim()).filter(Boolean),
+    allowedModelsManual: document.getElementById('allowedModels').value.split(',').map((m) => m.trim()).filter(Boolean),
+    allowedModelsAuto: document.getElementById('allowedModelsAuto').value.split(',').map((m) => m.trim()).filter(Boolean),
     extractionMode: document.getElementById('extractionMode').value,
-    domainExceptions: document.getElementById('domainExceptions').value.split(',').map((d) => d.trim()).filter(Boolean),
+    domainExceptionsReadability: document.getElementById('domainExceptionsReadability').value.split(',').map((d) => d.trim()).filter(Boolean),
+    domainExceptionsRaw: document.getElementById('domainExceptionsRaw').value.split(',').map((d) => d.trim()).filter(Boolean),
+    geminiAccountIndex: Math.max(0, Math.floor(Number(document.getElementById('geminiAccountIndex').value) || 0)),
+    modelDetectionBetaEnabled: document.getElementById('modelDetectionBeta').checked,
   };
+  // 自動用の編集内容を検出リストにも反映（削除も反映）
+  next.detectedModels = next.allowedModelsAuto;
   settings = await saveSettings(next);
   flashStatus('Saved');
+}
+
+function toggleModelTextareas() {
+  const mode = document.getElementById('modelAvailabilityMode').value;
+  const manualVisible = mode === 'manual';
+  const autoVisible = mode === 'auto';
+  document.getElementById('allowedModels').style.display = manualVisible ? 'block' : 'none';
+  document.getElementById('allowedModelsAuto').style.display = autoVisible ? 'block' : 'none';
+  const autoHint = document.getElementById('allowedModelsAutoHint');
+  if (autoHint) autoHint.style.display = autoVisible ? 'block' : 'none';
+}
+
+function toggleDomainTextareas() {
+  const mode = document.getElementById('extractionMode').value;
+  document.getElementById('domainExceptionsReadability').style.display = (mode === 'readability-first') ? 'block' : 'none';
+  document.getElementById('domainExceptionsRaw').style.display = (mode === 'raw') ? 'block' : 'none';
 }
 
 function flashStatus(text) {

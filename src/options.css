@@ -43,3 +43,54 @@ button {
   align-items: center;
   gap: 12px;
 }
+
+.hint {
+  color: #666;
+  font-size: 12px;
+  margin: 4px 0 0;
+}
+
+.inline {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+}
+
+textarea + textarea {
+  margin-top: 6px;
+}
+
+textarea[readonly] {
+  background: #f3f4f6;
+  color: #666;
+}
+
+.beta-hint {
+  margin: 6px 0 0 0;
+}
+
+.beta-block {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: flex-start;
+}
+
+.inline input[type="checkbox"] {
+  margin: 0;
+}
+
+.beta-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  margin: 0;
+  white-space: nowrap;
+}
+
+.beta-label input[type="checkbox"] {
+  margin: 0;
+}

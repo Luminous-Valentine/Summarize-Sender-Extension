@@ -35,6 +35,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     } catch (error) {
       sendResponse({ ok: false, error: String(error) });
     }
+    return true;
   }
-  return true;
+  return false;
 });
