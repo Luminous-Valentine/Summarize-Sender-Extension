@@ -1,18 +1,88 @@
 # Summarize Sender Extension
 
-A Chrome extension that opens a new ChatGPT or Gemini chat, auto-fills the prompt using configurable templates, and optionally presses send. It supports URL or content-based submissions, character limits, truncation, and model selection safeguards for ChatGPT.
+Chrome拡張機能「Summarize Sender」は、閲覧中のページを ChatGPT / Gemini に送るためのツールです。  
+新規チャットを開いて、テンプレートで組み立てたテキスト（URLのみ / 本文込み）を入力欄へ貼り付け、必要に応じて送信まで行います。
 
-## Features
-- Choose ChatGPT or Gemini as the destination and open a new chat automatically.
-- Send the current page via URL mode or content mode (page text inside a code block).
-- Configurable prompt templates with variables: `{url}`, `{title}`, `{content}`, `{selection}`.
-- Character-limit guard with truncation or abort strategies and `[TRUNCATED]` marker when trimming.
-- Optional auto-send with retry controls and model selection checks for ChatGPT.
-- Options page for templates, limits, retry settings, extraction preferences, and model availability mode.
+## 主な機能
+- **送信先**: ChatGPT / ChatGPT（一時チャット）/ Gemini
+- **送信モード**: URL方式 / 本文方式（本文をコードブロックで同梱）
+- **テンプレート**: `{url}`, `{title}`, `{content}`, `{selection}` を使ってプロンプトを生成
+- **プレビュー編集**: 送信直前の本文をポップアップで直接編集可能（再生成も可能）
+- **設定の保持**: ポップアップで選んだ内容は次回起動時に復元
+- **自動送信**: 入力後に送信ボタン押下を試行（リトライ回数・間隔を設定可能）
+- **文字数制限**: 上限超過時に「切り詰める / 中断する」を選択可能
+- **ダークモード**: ポップアップのライト/ダーク切替
+- **Geminiアカウント指定**: `https://gemini.google.com/u/N/app` の `N` をOptionsから指定可能
+- **ChatGPTモデル関連（ベータ）**: 自動検出UIの表示/非表示トグル（※未完成）
 
-## Development
-1. Load the extension in Chrome via **chrome://extensions** → **Load unpacked** and select this folder.
-2. Use the toolbar action to open the popup, choose destination, mode, template, model, and auto-send.
-3. Manage templates, limits, and model availability from the Options page.
+## インストール（開発版）
+1. Chromeで `chrome://extensions` を開く
+2. 右上の **デベロッパーモード** をON
+3. **パッケージ化されていない拡張機能を読み込む** → このリポジトリのフォルダを選択
 
-Permissions are limited to `activeTab`, `scripting`, `storage`, and `tabs`, with host access only for ChatGPT and Gemini domains.
+更新したら `chrome://extensions` で **再読み込み** を押してください。
+
+## 使い方（ポップアップ）
+1. 拡張機能アイコンをクリックしてポップアップを開く
+2. **Send to**（送信先）を選択
+3. **Mode**（URL方式/本文方式）を選択
+4. **Template / Prompt** を必要に応じて調整
+5. **送信内容プレビュー** を確認し、必要なら直接編集  
+   - 元に戻したいときは **再生成**
+6. **送信（入力）** を押す  
+   - **自動送信を試行** がONなら、入力後に送信も試します
+
+### ポップアップの保存される項目
+次回ポップアップを開いたときに復元されます。
+- 送信先 / モード / テンプレート選択 / Prompt編集内容 / 自動送信 / プレビューの手動編集内容 / テーマ
+
+## Options（設定画面）
+ポップアップの「Options」から開けます。
+
+### Templates
+テンプレートを追加・編集・削除できます。本文生成で使える変数:
+- `{url}`: ページURL
+- `{title}`: ページタイトル
+- `{content}`: 抽出した本文（Modeが本文方式のときに送信対象）
+- `{selection}`: 選択しているテキスト（対応している場合）
+
+### Sending
+- **Max characters**: 送信テキストの最大文字数
+- **Truncate strategy**:
+  - `切り詰める`: 上限まで短縮し、末尾に `[TRUNCATED]` を付与
+  - `中断する`: 上限超過時に送信を中止
+- **Auto-send retries / interval**: 自動送信のリトライ設定
+
+### Extraction
+- **主要コンテンツ優先**: 記事本文などのメイン要素を抽出するモード（ノイズが少ない）
+- **ページ全文**: ページ全体のテキストを取得するモード（欠落しにくいがノイズが多い）
+- **ドメイン自由記述欄**:
+  - モードごとに入力欄が切り替わります
+  - 現状はUIと保存のみで、抽出ロジックへの適用は今後の拡張予定です
+
+### Gemini
+- **Googleアカウント番号 (u/N の N)**: `0` / `1` などを指定して Gemini のURLを切り替えます
+
+### ChatGPTモデル自動検出（ベータ）
+- ONにするとポップアップにモデル関連UIが表示されます
+- ※自動検出/自動判定/モデル選択の実動作は未完成（ベータ扱い）
+
+## 権限とプライバシー
+- 拡張はページから本文を抽出し、ChatGPT/Geminiの入力欄へ貼り付けます
+- 送信内容は基本的に **ローカルで組み立て**、外部サーバーへ送信しません（送信先サイトへの入力/送信は除く）
+- 権限: `activeTab`, `scripting`, `storage`, `tabs`, `notifications`
+- ホスト権限: ChatGPT / Gemini のドメイン（`manifest.json`参照）
+
+## トラブルシューティング
+### 送信先を開けない / 入力できない
+- ChatGPT / Gemini に **ログイン済み** か確認してください
+- `chrome://extensions` で拡張を再読み込みして再試行してください
+- 権限の許可ダイアログが出る場合は許可してください
+
+
+## ディレクトリ構成（概要）
+- `src/popup.*`: ポップアップUI
+- `src/options.*`: Options（設定画面）
+- `src/background.js`: 送信フロー（新規タブ作成/入力/送信）
+- `src/content.js`: ページ本文抽出（タブからのデータ取得）
+- `src/chatTargets.js`: 送信先ごとのセレクタと入力ユーティリティ
