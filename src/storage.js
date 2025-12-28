@@ -8,8 +8,18 @@ const DEFAULT_SETTINGS = {
   retryCount: 1,
   retryIntervalMs: 800,
   extractionMode: 'readability-first',
-  domainExceptions: [],
+  domainExceptionsReadability: [],
+  domainExceptionsRaw: [],
   modelAvailabilityMode: 'auto',
+  theme: 'light',
+  selectedTemplateId: 'default',
+  promptDraft: '',
+  geminiAccountIndex: 0,
+  messageOverride: '',
+  detectedModels: [],
+  modelDetectionBetaEnabled: false,
+  allowedModelsManual: [],
+  allowedModelsAuto: [],
   allowedModels: [
     'gpt-4o',
     'gpt-4o-mini',
@@ -38,9 +48,10 @@ async function getSettings() {
   if (!Array.isArray(merged.templates) || merged.templates.length === 0) {
     merged.templates = DEFAULT_SETTINGS.templates;
   }
-  if (!merged.allowedModels || merged.allowedModels.length === 0) {
-    merged.allowedModels = DEFAULT_SETTINGS.allowedModels;
-  }
+  merged.allowedModelsManual = merged.allowedModelsManual?.length ? merged.allowedModelsManual : (merged.allowedModels?.length ? merged.allowedModels : DEFAULT_SETTINGS.allowedModels);
+  merged.allowedModelsAuto = merged.allowedModelsAuto?.length ? merged.allowedModelsAuto : merged.allowedModelsManual;
+  merged.detectedModels = Array.isArray(merged.detectedModels) ? merged.detectedModels : [];
+  merged.allowedModels = merged.allowedModelsManual; // backward compatibility
   await chrome.storage.local.set(merged);
   return merged;
 }

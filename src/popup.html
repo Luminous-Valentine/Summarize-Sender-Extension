@@ -8,12 +8,19 @@
 <body>
   <header>
     <h1>Summarize Sender</h1>
+    <div class="theme-toggle">
+      <label class="inline">
+        <input type="checkbox" id="themeToggle">
+        ダークモード
+      </label>
+    </div>
   </header>
   <div id="pageStatus" class="status" aria-live="polite"></div>
   <section class="controls">
     <label>Send to
       <select id="target">
         <option value="chatgpt">ChatGPT</option>
+        <option value="chatgpt_temp">ChatGPT (Temporary chat)</option>
         <option value="gemini">Gemini</option>
       </select>
     </label>
@@ -30,7 +37,11 @@
       <textarea id="prompt" rows="4"></textarea>
     </label>
     <label id="model-wrapper">ChatGPT model
-      <select id="model"></select>
+      <div class="model-row">
+        <select id="model"></select>
+        <button type="button" id="detectModels">再検出</button>
+      </div>
+      <div id="modelStatus" class="status hint"></div>
     </label>
     <label class="inline">
       <input type="checkbox" id="autoSend"> 自動送信を試行
@@ -39,9 +50,12 @@
   <section class="preview">
     <div class="preview-header">
       <span>送信内容プレビュー</span>
-      <span id="charCount">0 chars</span>
+      <div class="preview-actions">
+        <span id="charCount">0 chars</span>
+        <button type="button" id="regenPreview" title="テンプレートから再生成">再生成</button>
+      </div>
     </div>
-    <pre id="preview"></pre>
+    <textarea id="preview" rows="8"></textarea>
   </section>
   <footer>
     <button id="openOptions">Options</button>
