@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Summarize Sender",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Send the current page to ChatGPT or Gemini with templates and optional auto-send.",
   "permissions": ["activeTab", "scripting", "storage", "tabs", "notifications"],
   "host_permissions": [
