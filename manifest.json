@@ -1,0 +1,53 @@
+{
+  "manifest_version": 3,
+  "name": "Summarize Sender",
+  "version": "0.1.0",
+  "description": "Send the current page to ChatGPT or Gemini with templates and optional auto-send.",
+  "permissions": ["activeTab", "scripting", "storage", "tabs", "notifications"],
+  "host_permissions": [
+    "<all_urls>",
+    "https://chat.openai.com/*",
+    "https://chatgpt.com/*",
+    "https://gemini.google.com/*",
+    "https://gemini.google.com/app/*"
+  ],
+  "icons": {
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "action": {
+    "default_popup": "src/popup.html",
+    "default_title": "Summarize Sender",
+    "default_icon": {
+      "32": "icons/icon32.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "options_page": "src/options.html",
+  "background": {
+    "service_worker": "src/background.js",
+    "type": "module"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "icons/icon32.png",
+        "icons/icon48.png",
+        "icons/icon128.png",
+        "icons/icon32.svg",
+        "icons/icon48.svg",
+        "icons/icon128.svg"
+      ],
+      "matches": ["<all_urls>"]
+    }
+  ],
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["src/content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}

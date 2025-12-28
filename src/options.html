@@ -1,0 +1,76 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Summarize Sender Options</title>
+  <link rel="stylesheet" href="options.css">
+</head>
+<body>
+  <h1>Summarize Sender Options</h1>
+  <section>
+    <h2>Templates</h2>
+    <div id="templateList"></div>
+    <div class="row">
+      <input id="templateName" placeholder="Name" />
+      <input id="templateId" placeholder="ID" />
+    </div>
+    <textarea id="templateBody" rows="4" placeholder="Template body with {url} {title} {content} {selection}"></textarea>
+    <button id="saveTemplate">Save template</button>
+    <button id="deleteTemplate">Delete selected</button>
+  </section>
+  <section>
+    <h2>Sending</h2>
+    <label>Max characters <input type="number" id="maxChars" /></label>
+    <label>Truncate strategy
+      <select id="truncateStrategy">
+        <option value="truncate">切り詰める</option>
+        <option value="abort">中断する</option>
+      </select>
+    </label>
+    <label>Auto-send retries <input type="number" id="retryCount" min="1" max="5" /></label>
+    <label>Retry interval (ms) <input type="number" id="retryIntervalMs" /></label>
+  </section>
+  <section>
+    <h2>Model availability</h2>
+    <label>判定方式
+      <select id="modelAvailabilityMode">
+        <option value="auto">自動判定</option>
+        <option value="manual">手動リストのみ</option>
+      </select>
+    </label>
+    <textarea id="allowedModels" rows="3" placeholder="手動モードの候補 (カンマ区切り)"></textarea>
+    <textarea id="allowedModelsAuto" rows="3" placeholder="自動検出結果を追記して利用 (編集可能)" style="display:none;"></textarea>
+    <p class="hint beta-hint" id="allowedModelsAutoHint" style="display:none;">この欄は自動検出結果を追記して利用できます（編集可）</p>
+    <div class="beta-block">
+      <label class="beta-label">
+        <input type="checkbox" id="modelDetectionBeta">
+        <span>ChatGPTモデル自動検出（ベータ）</span>
+      </label>
+      <p class="hint">ベータをONにするとポップアップに検出UIが表示され、ChatGPT画面からモデル候補を読み取ります。現在は正常に動作しないため利用不可です。</p>
+    </div>
+  </section>
+  <section>
+    <h2>Extraction</h2>
+    <label>Extraction mode
+      <select id="extractionMode">
+        <option value="readability-first">主要コンテンツ優先</option>
+        <option value="raw">ページ全文</option>
+      </select>
+    </label>
+    <textarea id="domainExceptionsReadability" rows="2" placeholder="readability用ドメイン例: example.com,another-site.com"></textarea>
+    <textarea id="domainExceptionsRaw" rows="2" placeholder="raw用ドメイン例: example.com,another-site.com" style="display:none;"></textarea>
+  </section>
+  <section>
+    <h2>Gemini</h2>
+    <label>Googleアカウント番号 (u/N の N)
+      <input type="number" id="geminiAccountIndex" min="0" step="1" />
+    </label>
+    <p class="hint">例: https://gemini.google.com/u/1/app を使いたい場合は 1 を指定</p>
+  </section>
+  <div class="actions">
+    <button id="save">Save</button>
+    <span id="status"></span>
+  </div>
+  <script type="module" src="options.js"></script>
+</body>
+</html>
