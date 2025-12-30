@@ -69,7 +69,15 @@ async function ensureHostPermission(rawUrl) {
     const perm = { origins: [pattern] };
     const hasPerm = await new Promise((resolve) => chrome.permissions.contains(perm, (granted) => resolve(Boolean(granted))));
     if (hasPerm) return true;
-    return new Promise((resolve) => chrome.permissions.request(perm, (granted) => resolve(Boolean(granted))));
+    return new Promise((resolve) => chrome.permissions.request(perm, (granted) => {
+      const err = chrome.runtime?.lastError;
+      if (err) {
+        console.warn('Host permission request failed', err);
+        resolve(false);
+        return;
+      }
+      resolve(Boolean(granted));
+    }));
   } catch (error) {
     console.warn('Failed to parse host permission', error);
     return false;

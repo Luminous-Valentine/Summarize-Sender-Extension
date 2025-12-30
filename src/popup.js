@@ -39,11 +39,41 @@ async function ensurePermissionForUrl(rawUrl) {
     const perm = { origins: [originPattern] };
     const hasPermission = await new Promise((resolve) => chrome.permissions.contains(perm, (granted) => resolve(Boolean(granted))));
     if (hasPermission) return true;
-    return new Promise((resolve) => chrome.permissions.request(perm, (granted) => resolve(Boolean(granted))));
+    return new Promise((resolve) => chrome.permissions.request(perm, (granted) => {
+      const err = chrome.runtime?.lastError;
+      if (err) {
+        console.warn('Permission request failed', err);
+        resolve(false);
+        return;
+      }
+      resolve(Boolean(granted));
+    }));
   } catch (error) {
     console.warn('Permission request failed', error);
     return false;
   }
+}
+
+async function hasPermissionForUrl(rawUrl) {
+  if (!rawUrl) return false;
+  try {
+    const url = new URL(rawUrl);
+    const originPattern = `${url.origin}/*`;
+    const perm = { origins: [originPattern] };
+    return await new Promise((resolve) => chrome.permissions.contains(perm, (granted) => resolve(Boolean(granted))));
+  } catch (_error) {
+    return false;
+  }
+}
+
+function isExtractableUrl(rawUrl) {
+  if (!rawUrl) return false;
+  // Content scripts do not run on Chrome internal pages or extension pages.
+  if (rawUrl.startsWith('chrome://')) return false;
+  if (rawUrl.startsWith('chrome-extension://')) return false;
+  if (rawUrl.startsWith('edge://')) return false;
+  if (rawUrl.startsWith('about:')) return false;
+  return /^https?:\/\//.test(rawUrl);
 }
 
 async function pullPageData() {
@@ -51,8 +81,14 @@ async function pullPageData() {
   if (!tab) return;
   pageData.url = tab.url || '';
   pageData.title = tab.title || '';
-  if (!/^https?:\/\//.test(pageData.url)) {
+  if (!isExtractableUrl(pageData.url)) {
     pageStatusEl.textContent = 'このページでは本文抽出が許可されていません（URLのみ送信されます）';
+    pageStatusEl.classList.add('warning');
+    return;
+  }
+  const canRead = await hasPermissionForUrl(pageData.url);
+  if (!canRead) {
+    pageStatusEl.textContent = 'このページへのアクセス権がありません（URLのみ送信されます）';
     pageStatusEl.classList.add('warning');
     return;
   }
@@ -67,7 +103,11 @@ async function pullPageData() {
       pageStatusEl.classList.add('warning');
     }
   } catch (error) {
-    console.warn('Unable to read page data', error);
+    // Happens when the active tab has no content script (e.g. chrome://, chrome-extension://, new tab, etc).
+    const msg = String(error?.message || error || '');
+    if (!msg.includes('Receiving end does not exist')) {
+      console.warn('Unable to read page data', error);
+    }
     pageStatusEl.textContent = 'ページの本文を取得できませんでした（URLのみ送信されます）';
     pageStatusEl.classList.add('warning');
   }
@@ -303,14 +343,9 @@ function renderModelStatus(forcedText) {
 
 async function executeSend() {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-  if (tab?.url) {
-    const granted = await ensurePermissionForUrl(tab.url);
-    if (!granted) {
-      alert('このページへのアクセス権がありません。権限を許可してから再試行してください。');
-      return;
-    }
-    await pullPageData();
-  }
+  // Even when the active tab is an internal page (chrome://, chrome-extension://),
+  // allow sending with URL-only / prompt-only rather than hard-failing here.
+  if (tab?.url) await pullPageData();
 
   const payload = {
     target: document.getElementById('target').value,
