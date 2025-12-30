@@ -40,10 +40,11 @@ async function resolveIcon(size = 128) {
 
   for (const path of candidates) {
     try {
-      const response = await fetch(chrome.runtime.getURL(path));
+      const url = chrome.runtime.getURL(path);
+      const response = await fetch(url);
       if (response.ok) {
-        ICON_CACHE[key] = path;
-        return path;
+        ICON_CACHE[key] = url;
+        return url;
       }
     } catch (error) {
       console.warn('Icon lookup failed', path, error);
@@ -51,7 +52,7 @@ async function resolveIcon(size = 128) {
   }
 
   // Fall back to the last candidate (SVG) so notifications always have an icon.
-  const fallback = candidates[candidates.length - 1];
+  const fallback = chrome.runtime.getURL(candidates[0]);
   ICON_CACHE[key] = fallback;
   return fallback;
 }
@@ -180,7 +181,14 @@ function findInDocumentAndShadows(selectors, root = document, predicate) {
 async function emitNotification(title, message) {
   const iconUrl = await resolveIcon(128);
   if (chrome.notifications) {
-    chrome.notifications.create({ type: 'basic', iconUrl, title, message });
+    chrome.notifications.create({ type: 'basic', iconUrl, title, message }, () => {
+      const err = chrome.runtime?.lastError;
+      if (!err) return;
+      console.warn('Notification failed', err);
+      // Retry once with a known-good PNG URL.
+      const retryIconUrl = chrome.runtime.getURL('icons/icon128.png');
+      chrome.notifications.create({ type: 'basic', iconUrl: retryIconUrl, title, message });
+    });
   } else {
     console.warn(title, message);
   }
